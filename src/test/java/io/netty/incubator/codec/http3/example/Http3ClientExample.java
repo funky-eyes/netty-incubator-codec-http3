@@ -61,13 +61,11 @@ public final class Http3ClientExample {
                     .channel(NioDatagramChannel.class)
                     .handler(codec)
                     .bind(0).sync().channel();
-
+            TripleHttp3PingPongHandler tripleHttp3PingPongHandler = new TripleHttp3PingPongHandler(2000);
             QuicChannel quicChannel = QuicChannel.newBootstrap(channel)
-                    .handler(new Http3ClientConnectionHandler())
-                    .remoteAddress(new InetSocketAddress(NetUtil.LOCALHOST4, Http3ServerExample.PORT))
-                    .connect()
-                    .get();
-
+                .handler(
+                    new Http3ClientConnectionHandler(tripleHttp3PingPongHandler,null,null,null, true))
+                    .remoteAddress(new InetSocketAddress(NetUtil.LOCALHOST4, Http3ServerExample.PORT)).connect().get();
             QuicStreamChannel streamChannel = Http3.newRequestStream(quicChannel,
                     new Http3RequestStreamInboundHandler() {
                         @Override
@@ -95,7 +93,7 @@ public final class Http3ClientExample {
                     .scheme("https");
             streamChannel.writeAndFlush(frame)
                     .addListener(QuicStreamChannel.SHUTDOWN_OUTPUT).sync();
-
+            Thread.sleep(60000);
             // Wait for the stream channel and quic channel to be closed (this will happen after we received the FIN).
             // After this is done we will close the underlying datagram channel.
             streamChannel.closeFuture().sync();

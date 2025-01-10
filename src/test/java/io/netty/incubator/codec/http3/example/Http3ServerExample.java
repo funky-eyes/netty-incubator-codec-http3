@@ -104,7 +104,7 @@ public final class Http3ServerExample {
                                             }
                                         });
                                     }
-                                }));
+                                },new TripleHttp3PingPongHandler(2000),null,null,false));
                     }
                 }).build();
         try {
@@ -114,6 +114,7 @@ public final class Http3ServerExample {
                     .handler(codec)
                     .bind(new InetSocketAddress(port)).sync().channel();
             channel.closeFuture().sync();
+            Thread.sleep(60000);
         } finally {
             group.shutdownGracefully();
         }
