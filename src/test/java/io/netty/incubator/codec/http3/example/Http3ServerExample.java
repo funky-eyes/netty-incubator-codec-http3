@@ -62,7 +62,7 @@ public final class Http3ServerExample {
                 .applicationProtocols(Http3.supportedApplicationProtocols()).build();
         ChannelHandler codec = Http3.newQuicServerCodecBuilder()
                 .sslContext(sslContext)
-                .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
+                .maxIdleTimeout(60000, TimeUnit.MILLISECONDS)
                 .initialMaxData(10000000)
                 .initialMaxStreamDataBidirectionalLocal(1000000)
                 .initialMaxStreamDataBidirectionalRemote(1000000)
@@ -104,7 +104,7 @@ public final class Http3ServerExample {
                                             }
                                         });
                                     }
-                                },new TripleHttp3PingPongHandler(2000),null,null,false));
+                                },new TripleHttp3PingPongHandler(10000),null,null,false));
                     }
                 }).build();
         try {
@@ -114,7 +114,6 @@ public final class Http3ServerExample {
                     .handler(codec)
                     .bind(new InetSocketAddress(port)).sync().channel();
             channel.closeFuture().sync();
-            Thread.sleep(60000);
         } finally {
             group.shutdownGracefully();
         }

@@ -19,6 +19,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -37,6 +38,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public final class Http3ClientExample {
@@ -51,17 +53,22 @@ public final class Http3ClientExample {
                     .applicationProtocols(Http3.supportedApplicationProtocols()).build();
             ChannelHandler codec = Http3.newQuicClientCodecBuilder()
                     .sslContext(context)
-                    .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
+                    .maxIdleTimeout(60000, TimeUnit.MILLISECONDS)
                     .initialMaxData(10000000)
                     .initialMaxStreamDataBidirectionalLocal(1000000)
                     .build();
 
             Bootstrap bs = new Bootstrap();
+            TripleHttp3PingPongHandler tripleHttp3PingPongHandler = new TripleHttp3PingPongHandler(10000);
             Channel channel = bs.group(group)
                     .channel(NioDatagramChannel.class)
-                    .handler(codec)
+                    .handler(new ChannelInitializer<NioDatagramChannel>() {
+                        @Override
+                        protected void initChannel(NioDatagramChannel ch) {
+                            ch.pipeline().addLast(codec);
+                        }
+                    })
                     .bind(0).sync().channel();
-            TripleHttp3PingPongHandler tripleHttp3PingPongHandler = new TripleHttp3PingPongHandler(2000);
             QuicChannel quicChannel = QuicChannel.newBootstrap(channel)
                 .handler(
                     new Http3ClientConnectionHandler(tripleHttp3PingPongHandler,null,null,null, true))
@@ -84,7 +91,6 @@ public final class Http3ClientExample {
                             ctx.close();
                         }
                     }).sync().getNow();
-
             // Write the Header frame and send the FIN to mark the end of the request.
             // After this its not possible anymore to write any more data.
             Http3HeadersFrame frame = new DefaultHttp3HeadersFrame();

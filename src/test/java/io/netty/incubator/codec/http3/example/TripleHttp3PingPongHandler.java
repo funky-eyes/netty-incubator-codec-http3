@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.netty.channel.*;
 import io.netty.incubator.codec.http3.*;
 
-import io.netty.incubator.codec.quic.QuicStreamChannel;
 
 @ChannelHandler.Sharable
 public class TripleHttp3PingPongHandler extends ChannelDuplexHandler {
@@ -41,16 +40,12 @@ public class TripleHttp3PingPongHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-        QuicStreamChannel streamChannel = Http3.getLocalControlStream(ctx.channel());
-        Optional.ofNullable(streamChannel).ifPresent(channel -> sendPingFrame(ctx, streamChannel));
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        sendPingFrame(ctx, Http3.getLocalControlStream(ctx.channel().parent()));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        sendPingFrame(ctx);
-        System.out.println(msg.getClass());
         if (msg instanceof Http3UnknownFrame) {
             Http3UnknownFrame http3UnknownFrame = (Http3UnknownFrame)msg;
             if (http3UnknownFrame.type() == PING_PONG_TYPE) {
@@ -114,7 +109,7 @@ public class TripleHttp3PingPongHandler extends ChannelDuplexHandler {
                             alive.compareAndSet(true, false);
                             ctx.close();
                         }
-                        System.out.println("ping-pong");
+                        System.out.println(System.currentTimeMillis()+": ping-pong");
                     });
                 } catch (Exception e) {
                 e.printStackTrace();
