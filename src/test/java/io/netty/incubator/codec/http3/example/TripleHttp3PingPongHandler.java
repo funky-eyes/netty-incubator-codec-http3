@@ -78,7 +78,7 @@ public class TripleHttp3PingPongHandler extends ChannelDuplexHandler {
     }
 
     private void sendPingFrame(ChannelHandlerContext ctx) {
-            sendPingFrame(ctx, ctx.channel());
+        sendPingFrame(ctx, Http3.getLocalControlStream(ctx.channel().parent()));
     }
 
     private void sendPingFrame(ChannelHandlerContext ctx, Channel controlStream) {
